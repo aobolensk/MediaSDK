@@ -23,6 +23,7 @@
 #include <mfx_session.h>
 #include <mfx_tools.h>
 #include <mfx_common.h>
+#include <mfx_trace2.h>
 
 // sheduling and threading stuff
 #include <mfx_task.h>
@@ -512,6 +513,8 @@ mfxStatus MFXVideoDECODE_DecodeFrameAsync(mfxSession session, mfxBitstream *bs, 
     MFX_LTRACE_BUFFER(MFX_TRACE_LEVEL_API, surface_work);
     MFX_TRACE_CHROME_ADD_INFO("session", session);
 #endif
+    mfx::Trace::Scope tr(MFX_TRACE2_CTX, "DecodeFrameAsync", "dec");
+    tr.add_info("session", session);
 
     MFX_CHECK(session, MFX_ERR_INVALID_HANDLE);
     MFX_CHECK(session->m_pScheduler, MFX_ERR_NOT_INITIALIZED);
@@ -601,6 +604,7 @@ mfxStatus MFXVideoDECODE_DecodeFrameAsync(mfxSession session, mfxBitstream *bs, 
         {
             MFX_LTRACE_P(MFX_TRACE_LEVEL_API, *syncp);
             MFX_TRACE_CHROME_ADD_INFO("syncp", *syncp);
+            tr.add_info("syncp", *syncp);
         }
     }
     MFX_LTRACE_I(MFX_TRACE_LEVEL_API, mfxRes);

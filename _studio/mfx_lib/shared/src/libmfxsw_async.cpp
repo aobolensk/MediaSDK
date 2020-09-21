@@ -22,6 +22,7 @@
 #include <mfx_session.h>
 #include <mfx_trace.h>
 #include <mfx_utils.h>
+#include <mfx_trace2.h>
 
 mfxStatus MFXVideoCORE_SyncOperation(mfxSession session, mfxSyncPoint syncp, mfxU32 wait)
 {
@@ -29,6 +30,9 @@ mfxStatus MFXVideoCORE_SyncOperation(mfxSession session, mfxSyncPoint syncp, mfx
     MFX_TRACE_CHROME_ADD_INFO("session", session);
     MFX_TRACE_CHROME_ADD_INFO("syncp", syncp);
     mfxStatus mfxRes;
+    mfx::Trace::Scope tr(MFX_TRACE2_CTX, "SyncOperation", "sync");
+    tr.add_info("session", session);
+    tr.add_info("syncp", syncp);
 
     MFX_CHECK(session, MFX_ERR_INVALID_HANDLE);
     MFX_CHECK(syncp, MFX_ERR_NULL_PTR);

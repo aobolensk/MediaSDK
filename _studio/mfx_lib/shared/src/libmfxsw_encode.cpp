@@ -17,7 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
+#include <mfx_trace2.h>
 #include <mfxvideo.h>
 
 #include <functional>
@@ -845,6 +845,8 @@ mfxStatus MFXVideoENCODE_EncodeFrameAsync(mfxSession session, mfxEncodeCtrl *ctr
 
     MFX_AUTO_LTRACE_WITHID(MFX_TRACE_LEVEL_API, "MFX_EncodeFrameAsync");
     MFX_TRACE_CHROME_ADD_INFO("session", session);
+    mfx::Trace::Scope tr(MFX_TRACE2_CTX, "EncodeFrameAsync", "enc");
+    tr.add_info("session", "session");
     MFX_LTRACE_BUFFER(MFX_TRACE_LEVEL_API, ctrl);
     MFX_LTRACE_BUFFER(MFX_TRACE_LEVEL_API, surface);
 
@@ -999,6 +1001,7 @@ mfxStatus MFXVideoENCODE_EncodeFrameAsync(mfxSession session, mfxEncodeCtrl *ctr
     {
         MFX_LTRACE_P(MFX_TRACE_LEVEL_API, *syncp);
         MFX_TRACE_CHROME_ADD_INFO("syncp", *syncp);
+        tr.add_info("syncp", *syncp);
     }
     MFX_LTRACE_I(MFX_TRACE_LEVEL_API, mfxRes);
     return mfxRes;

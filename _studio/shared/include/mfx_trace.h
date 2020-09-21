@@ -473,7 +473,7 @@ private:
 // auto tracing of the functions
 
 #ifdef MFX_TRACE_ENABLE
-#if defined(MFX_TRACE_ENABLE_CHROME) && (defined(LINUX32))
+#if 0 && defined(MFX_TRACE_ENABLE_CHROME) && (defined(LINUX32))
     // Chrome traces
     #define _MFX_AUTO_LTRACE_(_level, _task_name, _bCreateID)                      \
         DISABLE_WARN_HIDE_PREV_LOCAL_DECLARATION                                   \
