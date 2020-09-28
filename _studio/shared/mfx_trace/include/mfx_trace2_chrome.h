@@ -4,8 +4,6 @@
 
 #ifdef MFX_TRACE_ENABLE_CHROME
 
-extern mfx::Trace _mfx_trace;
-
 namespace mfx
 {
 

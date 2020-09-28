@@ -1,4 +1,4 @@
-#include <chrono>
+#include <cstring>
 #include <sstream>
 #include <thread>
 #include <mutex>
@@ -13,9 +13,28 @@ static std::mutex traceMutex;
 
 mfx::Trace::Trace()
 {
+    FILE *config = fopen((std::string(getenv("HOME")) + "/.mfx_trace").c_str(), "r");
+    if (!config)
+        config = fopen("/etc/mfx_trace", "r");
+    if (!config)
+        return;
+    char buffer[128] = {};
+    std::map <std::string, std::string> options;
+    options["TextLog"] = "/tmp/mfx.log";
+    while (fgets(buffer, sizeof(buffer), config))
+    {
+        char key_buffer[32] = {}, val_buffer[32] = {};
+        sscanf(buffer, "%[^=]=%s\n", key_buffer, val_buffer);
+        options.emplace(key_buffer, val_buffer);
+    }
+    fclose(config);
+
     events.reserve(64000);
 #ifdef MFX_TRACE_ENABLE_TEXTLOG
-    backends.push_back(std::unique_ptr<TraceBackend>(new TextLog));
+    if (options["Output"] == "0x30") // maybe incorrect code
+    {
+        backends.push_back(std::unique_ptr<TraceBackend>(new TextLog(options["TextLog"].c_str())));
+    }
 #endif
 #ifdef MFX_TRACE_ENABLE_CHROME
     backends.push_back(std::unique_ptr<TraceBackend>(new Chrome));
@@ -47,13 +66,13 @@ mfx::Trace::Node::Node(const std::string &str)
 {
 }
 
-mfx::Trace::Node::Node(const std::map <std::string, Node> &str)
+mfx::Trace::Node::Node(const std::map <std::string, Node> &map)
     : type(mfx::Trace::NodeType::MAPPING)
     , map(map)
 {
 }
 
-mfx::Trace::Node::Node(const std::vector <Node> &str)
+mfx::Trace::Node::Node(const std::vector <Node> &vec)
     : type(mfx::Trace::NodeType::VECTOR)
     , vec(vec)
 {
@@ -149,33 +168,131 @@ mfx::Trace::Scope::Scope(SourceLocation sl, const char* name, const char *catego
     e.type = "B";
     parentIndex = _mfx_trace.events.size();
     _mfx_trace.pushEvent(e);
+    e.parentIndex = parentIndex;
 }
 
 mfx::Trace::Scope::~Scope()
 {
-    e.parentIndex = parentIndex;
     e.type = "E";
+    e.description = "";
     e.timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
     _mfx_trace.pushEvent(e);
 }
 
+std::string mfx::Trace::hex(mfxU64 value)
+{
+    return static_cast<std::ostringstream const &>(std::ostringstream() << "0x" << std::hex << value).str();
+}
+
 std::string mfx::Trace::hex(mfxU32 value)
 {
-    return static_cast<std::ostringstream const &>(std::ostringstream() << std::hex << value).str();
+    return static_cast<std::ostringstream const &>(std::ostringstream() << "0x" << std::hex << value).str();
 }
 
-void mfx::Trace::Scope::add_info(const char* key, const std::string &value)
+std::string mfx::Trace::hex(mfxU16 value)
 {
-    e.map.emplace(key, mfx::Trace::Node(value));
+    return static_cast<std::ostringstream const &>(std::ostringstream() << "0x" << std::hex << value).str();
 }
 
-void mfx::Trace::Scope::add_info(const char* key, mfxU32 value)
+std::string mfx::Trace::hex(mfxU8 value)
 {
-    e.map.emplace(key, mfx::Trace::Node(std::to_string(value)));
+    return static_cast<std::ostringstream const &>(std::ostringstream() << "0x" << std::hex << (mfxU16)value).str();
 }
 
-void mfx::Trace::Scope::add_info(const char* key, void *value)
+void mfx::Trace::Scope::add_info_pair(const char* key, const std::string &value)
+{
+    e.map.emplace(key, Node(value));
+}
+
+void mfx::Trace::Scope::add_info_pair(const char* key, mfxU32 value)
+{
+    e.map.emplace(key, Node(std::to_string(value)));
+}
+
+void mfx::Trace::Scope::add_info_pair(const char* key, const mfxVideoParam &value)
+{
+    // Not all fields are listed here
+    std::map <std::string, Node> mfxVideoParamMap;
+    mfxVideoParamMap.emplace("AllocId", Node(std::to_string(value.AllocId)));
+    mfxVideoParamMap.emplace("NumExtParam", Node(std::to_string(value.NumExtParam)));
+    std::map <std::string, Node> mfxInfoMFXMap;
+    {
+        mfxInfoMFXMap.emplace("LowPower", Node(std::to_string(value.mfx.LowPower)));
+        std::map <std::string, Node> frameInfoMap;
+        {
+            frameInfoMap.emplace("Width", Node(std::to_string(value.mfx.FrameInfo.Width)));
+            frameInfoMap.emplace("Height", Node(std::to_string(value.mfx.FrameInfo.Height)));
+            std::map <std::string, Node> frameIdMap;
+            {
+                frameIdMap.emplace("TemporalId", Node(std::to_string(value.mfx.FrameInfo.FrameId.TemporalId)));
+                frameIdMap.emplace("PriorityId", Node(std::to_string(value.mfx.FrameInfo.FrameId.PriorityId)));
+            }
+            frameInfoMap.emplace("FrameId", Node(frameIdMap));
+        }
+        mfxInfoMFXMap.emplace("FrameInfo", Node(frameInfoMap));
+    }
+    mfxVideoParamMap.emplace("mfxInfoMFX", Node(mfxInfoMFXMap));
+    e.map.emplace(key, Node(mfxVideoParamMap));
+}
+
+void mfx::Trace::Scope::add_info_pair(const char* key, const mfxExtBuffer &value)
+{
+    std::map <std::string, Node> extBufferMap;
+    extBufferMap.emplace("BufferId", std::to_string(value.BufferId));
+    extBufferMap.emplace("BufferSz", std::to_string(value.BufferSz));
+    e.map.emplace(key, Node(extBufferMap));
+}
+
+void mfx::Trace::Scope::add_info_pair(const char* key, const mfxExtCodingOption2 &value)
+{
+    std::map <std::string, Node> codingOptionMap;
+    codingOptionMap.emplace("IntRefType", Node(std::to_string(value.IntRefType)));
+    codingOptionMap.emplace("IntRefCycleSize", Node(std::to_string(value.IntRefCycleSize)));
+    codingOptionMap.emplace("IntRefQPDelta", Node(std::to_string(value.IntRefQPDelta)));
+    codingOptionMap.emplace("MaxFrameSize", Node(std::to_string(value.MaxFrameSize)));
+    codingOptionMap.emplace("MaxSliceSize", Node(std::to_string(value.MaxSliceSize)));
+    codingOptionMap.emplace("BitrateLimit", Node(std::to_string(value.BitrateLimit)));
+    codingOptionMap.emplace("MBBRC", Node(std::to_string(value.MBBRC)));
+    codingOptionMap.emplace("ExtBRC", Node(std::to_string(value.ExtBRC)));
+    codingOptionMap.emplace("LookAheadDepth", Node(std::to_string(value.LookAheadDepth)));
+    codingOptionMap.emplace("Trellis", Node(std::to_string(value.Trellis)));
+    codingOptionMap.emplace("RepeatPPS", Node(std::to_string(value.RepeatPPS)));
+    codingOptionMap.emplace("BRefType", Node(std::to_string(value.BRefType)));
+    codingOptionMap.emplace("AdaptiveI", Node(std::to_string(value.AdaptiveI)));
+    codingOptionMap.emplace("AdaptiveB", Node(std::to_string(value.AdaptiveB)));
+    codingOptionMap.emplace("LookAheadDS", Node(std::to_string(value.LookAheadDS)));
+    codingOptionMap.emplace("NumMbPerSlice", Node(std::to_string(value.NumMbPerSlice)));
+    codingOptionMap.emplace("SkipFrame", Node(std::to_string(value.SkipFrame)));
+    codingOptionMap.emplace("MinQPI", Node(std::to_string(value.MinQPI)));
+    codingOptionMap.emplace("MaxQPI", Node(std::to_string(value.MaxQPI)));
+    codingOptionMap.emplace("MinQPP", Node(std::to_string(value.MinQPP)));
+    codingOptionMap.emplace("MaxQPP", Node(std::to_string(value.MaxQPP)));
+    codingOptionMap.emplace("MinQPB", Node(std::to_string(value.MinQPB)));
+    codingOptionMap.emplace("MaxQPB", Node(std::to_string(value.MaxQPB)));
+    codingOptionMap.emplace("FixedFrameRate", Node(std::to_string(value.FixedFrameRate)));
+    codingOptionMap.emplace("DisableDeblockingIdc", Node(std::to_string(value.DisableDeblockingIdc)));
+    codingOptionMap.emplace("DisableVUI", Node(std::to_string(value.DisableVUI)));
+    codingOptionMap.emplace("BufferingPeriodSEI", Node(std::to_string(value.BufferingPeriodSEI)));
+    codingOptionMap.emplace("EnableMAD", Node(std::to_string(value.EnableMAD)));
+    codingOptionMap.emplace("UseRawRef", Node(std::to_string(value.UseRawRef)));
+    e.map.emplace(key, Node(codingOptionMap));
+}
+
+void mfx::Trace::Scope::add_info_pair(const char* key, const MFX_GUID &value)
+{
+    std::vector <Node> guidVec;
+    guidVec.emplace_back(Node(hex(value.Data1)));
+    guidVec.emplace_back(Node(hex(value.Data2)));
+    guidVec.emplace_back(Node(hex(value.Data3)));
+    std::vector <Node> guidData4Vec;
+    for (unsigned i = 0; i < sizeof(value.Data4) / sizeof(value.Data4[0]); ++i)
+        guidData4Vec.emplace_back(Node(hex(static_cast<mfxU8>(value.Data4[i]))));
+    guidVec.emplace_back(Node(guidData4Vec));
+    e.map.emplace(key, Node(guidVec));
+}
+
+void mfx::Trace::Scope::add_info_pair(const char* key, void *value)
 {
     std::string val = static_cast<std::ostringstream const &>(std::ostringstream() << value).str();
-    e.map.emplace(key, mfx::Trace::Node(val));
+    e.map.emplace(key, Node(val));
 }

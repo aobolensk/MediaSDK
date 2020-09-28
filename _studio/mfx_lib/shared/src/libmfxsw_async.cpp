@@ -31,8 +31,8 @@ mfxStatus MFXVideoCORE_SyncOperation(mfxSession session, mfxSyncPoint syncp, mfx
     MFX_TRACE_CHROME_ADD_INFO("syncp", syncp);
     mfxStatus mfxRes;
     mfx::Trace::Scope tr(MFX_TRACE2_CTX, "SyncOperation", "sync");
-    tr.add_info("session", session);
-    tr.add_info("syncp", syncp);
+    tr.add_info(MFX_TRACE2_CTX, "session", session);
+    tr.add_info(MFX_TRACE2_CTX, "syncp", syncp);
 
     MFX_CHECK(session, MFX_ERR_INVALID_HANDLE);
     MFX_CHECK(syncp, MFX_ERR_NULL_PTR);

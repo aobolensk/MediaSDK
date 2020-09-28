@@ -4,8 +4,6 @@
 
 #ifdef MFX_TRACE_ENABLE_TEXTLOG
 
-extern mfx::Trace _mfx_trace;
-
 namespace mfx
 {
 
@@ -14,7 +12,7 @@ class TextLog : public TraceBackend
 private:
     FILE *file;
 public:
-    TextLog();
+    TextLog(const char *filename);
     void handleEvent(const Trace::Event &e) override;
     ~TextLog() override;
 };

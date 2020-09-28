@@ -9,7 +9,48 @@ mfx::Chrome::Chrome()
 {
 }
 
+static void print_node(const mfx::Trace::Node &node, FILE *f)
+{
+    if (node.type == mfx::Trace::NodeType::STRING)
+    {
+        fprintf(f, "\"%s\"", node.str.c_str());
+    }
+    else if (node.type == mfx::Trace::NodeType::MAPPING)
+    {
+        fprintf(f, "{");
+        mfxU64 index = 0;
+        for (const auto &pair : node.map)
+        {
+            fprintf(f, "\"%s\": ", pair.first.c_str());
+            print_node(pair.second, f);
+            if (index + 1 != node.map.size())
+            {
+                fprintf(f, ",");
+            }
+            ++index;
+        }
+        fprintf(f, "}");
+    }
+    else if (node.type == mfx::Trace::NodeType::VECTOR)
+    {
+        fprintf(f, "[");
+        for (size_t i = 0; i < node.vec.size(); ++i)
+        {
+            print_node(node.vec[i], f);
+            if (i + 1 != node.vec.size())
+            {
+                fprintf(f, ",");
+            }
+        }
+        fprintf(f, "]");
+    }
+}
+
 void write_event(FILE *file, const mfx::Trace::Event &e) {
+    if (e.type == "I")
+    {
+        return;
+    }
     fprintf(file, "{");
     fprintf(file, "\"name\": \"%s\", \"ph\": \"%s\", \"ts\": %llu, \"pid\": %s, \"tid\": \"%s\", \"id\": %llu, ",
         e.name, e.type.c_str(), e.timestamp, e.threadId.c_str(), e.category, e.id);
@@ -21,17 +62,11 @@ void write_event(FILE *file, const mfx::Trace::Event &e) {
     mfxU64 index = 0;
     for (const auto &pair : e.map)
     {
-        if (pair.second.type == mfx::Trace::NodeType::STRING)
-        {
-            fprintf(file, "\"%s\": \"%s\"", pair.first.c_str(), pair.second.str.c_str());
-        }
-        else
-        {
-            fprintf(file, "\"%s\": \"\"", pair.first.c_str());
-        }
+        fprintf(file, "\"%s\": ", pair.first.c_str());
+        print_node(pair.second, file);
         if (index + 1 != e.map.size())
         {
-            fprintf(file, ", ");
+            fprintf(file, ",");
         }
         ++index;
     }

@@ -20,14 +20,24 @@
 
 #ifndef __MFX_TRACE2_H__
 #define __MFX_TRACE2_H__
+#include <chrono>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "mfxdefs.h"
+#include "mfxstructures.h"
+#include "mfx_interface.h"
 
 #define MFX_TRACE2_CTX mfx::SourceLocation(__LINE__, __FILE__, __FUNCTION__)
+
+namespace mfx
+{
+class Trace;
+};
+
+extern mfx::Trace _mfx_trace;
 
 namespace mfx
 {
@@ -40,10 +50,10 @@ private:
     const char* _function_name;
 public:
     SourceLocation() = default;
-    SourceLocation(mfxU32 _line, const char* _file_name, const char* _function_name);
+    SourceLocation(uint_least32_t _line, const char* _file_name, const char* _function_name);
     ~SourceLocation() = default;
 
-    constexpr mfxU32 line() const noexcept
+    constexpr uint_least32_t line() const noexcept
     {
         return _line;
     }
@@ -96,11 +106,11 @@ public:
         SourceLocation sl;
         const char *name = nullptr;
         const char *category = nullptr;
-        mfxU64 id;
+        mfxU64 id; // event group ID
         mfxU64 parentIndex; // = 0 if it is start
-        mfxU64 timestamp;
+        mfxU64 timestamp; // event timestamp
         std::string threadId;
-        std::string type;
+        std::string type; // "B" - begin, "E" - end, "I" - add info
         std::string description;
         std::map <std::string, Node> map;
     };
@@ -116,7 +126,10 @@ public:
         GENERIC = 0,
     } traceLevel;
 
+    static std::string hex(mfxU64 value);
     static std::string hex(mfxU32 value);
+    static std::string hex(mfxU16 value);
+    static std::string hex(mfxU8 value);
 
     class Scope
     {
@@ -124,14 +137,29 @@ public:
         mfxU8 level = GENERIC;
         Event e;
         mfxU64 parentIndex;
+        void add_info_pair(const char* key, const std::string &value);
+        void add_info_pair(const char* key, const mfxVideoParam &value);
+        void add_info_pair(const char* key, const mfxExtBuffer &value);
+        void add_info_pair(const char* key, const mfxExtCodingOption2 &value);
+        void add_info_pair(const char* key, const MFX_GUID &value);
+        void add_info_pair(const char* key, mfxU32 value);
+        void add_info_pair(const char* key, void* value);
     public:
         Scope(SourceLocation sl, const char* name, mfxU8 level = GENERIC);
         Scope(SourceLocation sl, const char* name, const char *category, mfxU8 level = GENERIC);
         ~Scope();
 
-        void add_info(const char* key, const std::string &value);
-        void add_info(const char* key, mfxU32 value);
-        void add_info(const char* key, void* value);
+        template <typename... Args>
+        void add_info(SourceLocation sl, const char *key, Args... args)
+        {
+            add_info_pair(key, args...);
+            Event event(e);
+            event.sl = sl;
+            event.type = "I";
+            event.timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+            event.description = key;
+            _mfx_trace.pushEvent(event);
+        }
     };
 
 public:

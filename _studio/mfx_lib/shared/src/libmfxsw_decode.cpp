@@ -514,7 +514,7 @@ mfxStatus MFXVideoDECODE_DecodeFrameAsync(mfxSession session, mfxBitstream *bs, 
     MFX_TRACE_CHROME_ADD_INFO("session", session);
 #endif
     mfx::Trace::Scope tr(MFX_TRACE2_CTX, "DecodeFrameAsync", "dec");
-    tr.add_info("session", session);
+    tr.add_info(MFX_TRACE2_CTX, "session", session);
 
     MFX_CHECK(session, MFX_ERR_INVALID_HANDLE);
     MFX_CHECK(session->m_pScheduler, MFX_ERR_NOT_INITIALIZED);
@@ -604,7 +604,7 @@ mfxStatus MFXVideoDECODE_DecodeFrameAsync(mfxSession session, mfxBitstream *bs, 
         {
             MFX_LTRACE_P(MFX_TRACE_LEVEL_API, *syncp);
             MFX_TRACE_CHROME_ADD_INFO("syncp", *syncp);
-            tr.add_info("syncp", *syncp);
+            tr.add_info(MFX_TRACE2_CTX, "syncp", *syncp);
         }
     }
     MFX_LTRACE_I(MFX_TRACE_LEVEL_API, mfxRes);

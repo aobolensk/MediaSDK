@@ -2,21 +2,30 @@
 
 #ifdef MFX_TRACE_ENABLE_TEXTLOG
 
-const char *TEXTLOG_FILENAME = "/tmp/mfx.log";
-
-mfx::TextLog::TextLog()
+mfx::TextLog::TextLog(const char *filename)
 {
-    file = fopen(TEXTLOG_FILENAME, "w");
+    file = fopen(filename, "w");
 }
 
 void mfx::TextLog::handleEvent(const mfx::Trace::Event &e)
 {
-    fprintf(file, "%s:%d - %s %llu %s\n", e.sl.file_name(), e.sl.line(), e.sl.function_name(), e.timestamp, e.parentIndex == 0 ? "ENTER" : "EXIT");
-    for (const auto &pair : e.map)
+    const char *eventType = "";
+    if (e.type == "B")
+        eventType = "ENTER";
+    else if (e.type == "E")
+        eventType = "EXIT";
+    else if (e.type == "I")
+        eventType = "VARIABLE";
+    fprintf(file, "%s:%d - %s %llu %s\n", e.sl.file_name(), e.sl.line(), e.sl.function_name(), e.timestamp, eventType);
+    if (e.type == "I")
     {
-        if (pair.second.type == Trace::NodeType::STRING)
+        auto entry = e.map.find(e.description);
+        if (entry != e.map.end())
         {
-            fprintf(file, "\t\t%s: %s\n", pair.first.c_str(), pair.second.str.c_str());
+            if (entry->second.type == Trace::NodeType::STRING)
+            {
+                fprintf(file, "\t\t%s: %s\n", e.description.c_str(), entry->second.str.c_str());
+            }
         }
     }
 }
