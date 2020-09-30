@@ -47,14 +47,29 @@ static void print_node(const mfx::Trace::Node &node, FILE *f)
 }
 
 void write_event(FILE *file, const mfx::Trace::Event &e) {
-    if (e.type == "I")
+    const char *eventType = "";
+    switch (e.type)
     {
+    case mfx::Trace::EventType::NONE:
+    case mfx::Trace::EventType::ADD_INFO:
         return;
+    case mfx::Trace::EventType::BEGIN:
+        eventType = "B";
+        break;
+    case mfx::Trace::EventType::END:
+        eventType = "E";
+        break;
+    case mfx::Trace::EventType::OTHER1:
+        eventType = "s";
+        break;
+    case mfx::Trace::EventType::OTHER2:
+        eventType = "f";
+        break;
     }
     fprintf(file, "{");
     fprintf(file, "\"name\": \"%s\", \"ph\": \"%s\", \"ts\": %llu, \"pid\": %s, \"tid\": \"%s\", \"id\": %llu, ",
-        e.name, e.type.c_str(), e.timestamp, e.threadId.c_str(), e.category, e.id);
-    if (e.type == "s" || e.type == "f")  // Flow events
+        e.name, eventType, e.timestamp, e.threadId.c_str(), e.category, e.id);
+    if (e.type == mfx::Trace::EventType::OTHER1 || e.type == mfx::Trace::EventType::OTHER2)  // Flow events
     {
         fprintf(file, "\"cat\": \"%s\", \"bp\": \"e\", ", e.description.c_str());
     }
@@ -84,7 +99,7 @@ mfx::Chrome::~Chrome()
     std::map <std::string, Trace::Event> flows;
     for (auto it = events.begin(); it != events.end(); ++it)
     {
-        if (it->type != "E" || std::string(it->category) == "sync")
+        if (it->type != mfx::Trace::EventType::END || std::string(it->category) == "sync")
             continue;
         auto syncpIterator = std::find_if(
             it->map.begin(), it->map.end(), [](const std::pair <std::string, Trace::Node> &p)
@@ -97,7 +112,7 @@ mfx::Chrome::~Chrome()
     }
     for (auto it = _mfx_trace.events.begin(); it != _mfx_trace.events.end(); ++it)
     {
-        if (it->type != "E" || std::string(it->category) != "sync")
+        if (it->type != mfx::Trace::EventType::END || std::string(it->category) != "sync")
             continue;
         auto syncpIterator = std::find_if(
             it->map.begin(), it->map.end(), [](const std::pair <std::string, Trace::Node> &p)
@@ -113,14 +128,14 @@ mfx::Chrome::~Chrome()
             e.timestamp = flowBegin->second.timestamp;
             e.parentIndex = 0;
             e.id = Trace::idCounter++;
-            e.type = "s";
+            e.type = mfx::Trace::EventType::OTHER1;
             e.threadId = it->threadId;
             events.push_back(e);
             e.name = "link";
             e.category = "sync";
             e.timestamp = _mfx_trace.events[it->parentIndex].timestamp;
             e.parentIndex = e.id;
-            e.type = "f";
+            e.type = mfx::Trace::EventType::OTHER2;
             events.push_back(e);
             flows.erase(flowBegin);
         }

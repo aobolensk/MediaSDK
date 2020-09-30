@@ -100,6 +100,16 @@ public:
         ~Node();
     };
 
+    enum class EventType
+    {
+        NONE,
+        BEGIN,
+        END,
+        ADD_INFO,
+        OTHER1,
+        OTHER2,
+    };
+
     class Event
     {
     public:
@@ -110,7 +120,7 @@ public:
         mfxU64 parentIndex; // = 0 if it is start
         mfxU64 timestamp; // event timestamp
         std::string threadId;
-        std::string type; // "B" - begin, "E" - end, "I" - add info
+        EventType type;
         std::string description;
         std::map <std::string, Node> map;
     };
@@ -155,7 +165,7 @@ public:
             add_info_pair(key, args...);
             Event event(e);
             event.sl = sl;
-            event.type = "I";
+            event.type = mfx::Trace::EventType::ADD_INFO;
             event.timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
             event.description = key;
             _mfx_trace.pushEvent(event);

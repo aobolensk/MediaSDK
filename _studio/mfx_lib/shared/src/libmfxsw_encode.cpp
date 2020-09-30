@@ -673,7 +673,6 @@ mfxStatus MFXVideoENCODE_QueryIOSurf(mfxSession session, mfxVideoParam *par, mfx
     MFX_CHECK(par, MFX_ERR_NULL_PTR);
     MFX_CHECK(request, MFX_ERR_NULL_PTR);
     mfx::Trace::Scope tr(MFX_TRACE2_CTX, "QueryIOSurf", "query");
-    tr.add_info(MFX_TRACE2_CTX, "_", "___________________________________________________________________________________________________________________________");
     tr.add_info(MFX_TRACE2_CTX, "par", *par);
     tr.add_info(MFX_TRACE2_CTX, "co2", *(mfxExtCodingOption2 *)GetExtBuffer(par->ExtParam, par->NumExtParam, MFX_EXTBUFF_CODING_OPTION2));
     tr.add_info(MFX_TRACE2_CTX, "fei_guid", MFXIFEIEnabled_GUID);

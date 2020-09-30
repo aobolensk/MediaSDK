@@ -165,7 +165,7 @@ mfx::Trace::Scope::Scope(SourceLocation sl, const char* name, const char *catego
     e.id = idCounter++;
     e.category = category;
     e.timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
-    e.type = "B";
+    e.type = mfx::Trace::EventType::BEGIN;
     parentIndex = _mfx_trace.events.size();
     _mfx_trace.pushEvent(e);
     e.parentIndex = parentIndex;
@@ -173,7 +173,7 @@ mfx::Trace::Scope::Scope(SourceLocation sl, const char* name, const char *catego
 
 mfx::Trace::Scope::~Scope()
 {
-    e.type = "E";
+    e.type = mfx::Trace::EventType::END;
     e.description = "";
     e.timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
     _mfx_trace.pushEvent(e);

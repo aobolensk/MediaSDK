@@ -7,25 +7,63 @@ mfx::TextLog::TextLog(const char *filename)
     file = fopen(filename, "w");
 }
 
+static void print_node(const mfx::Trace::Node &node, FILE *f, unsigned depth = 1)
+{
+    if (node.type == mfx::Trace::NodeType::STRING)
+    {
+        fprintf(f, "\"%s\"", node.str.c_str());
+    }
+    else if (node.type == mfx::Trace::NodeType::MAPPING)
+    {
+        mfxU64 index = 0;
+        for (const auto &pair : node.map)
+        {
+            fprintf(f, "\n");
+            for (unsigned i = 0; i < depth + 1; ++i) fprintf(f, "\t");
+            fprintf(f, "\"%s\": ", pair.first.c_str());
+            print_node(pair.second, f, depth + 1);
+            ++index;
+        }
+    }
+    else if (node.type == mfx::Trace::NodeType::VECTOR)
+    {
+        for (size_t i = 0; i < node.vec.size(); ++i)
+        {
+            print_node(node.vec[i], f);
+            if (i + 1 != node.vec.size())
+            {
+                fprintf(f, ", ");
+            }
+        }
+    }
+}
+
 void mfx::TextLog::handleEvent(const mfx::Trace::Event &e)
 {
     const char *eventType = "";
-    if (e.type == "B")
+    switch (e.type)
+    {
+    case mfx::Trace::EventType::BEGIN:
         eventType = "ENTER";
-    else if (e.type == "E")
+        break;
+    case mfx::Trace::EventType::END:
         eventType = "EXIT";
-    else if (e.type == "I")
+        break;
+    case mfx::Trace::EventType::ADD_INFO:
         eventType = "VARIABLE";
+        break;
+    default:
+        break;
+    }
     fprintf(file, "%s:%d - %s %llu %s\n", e.sl.file_name(), e.sl.line(), e.sl.function_name(), e.timestamp, eventType);
-    if (e.type == "I")
+    if (e.type == mfx::Trace::EventType::ADD_INFO)
     {
         auto entry = e.map.find(e.description);
         if (entry != e.map.end())
         {
-            if (entry->second.type == Trace::NodeType::STRING)
-            {
-                fprintf(file, "\t\t%s: %s\n", e.description.c_str(), entry->second.str.c_str());
-            }
+            fprintf(file, "\t\"%s\":", entry->first.c_str());
+            print_node(entry->second, file);
+            fprintf(file, "\n");
         }
     }
 }
