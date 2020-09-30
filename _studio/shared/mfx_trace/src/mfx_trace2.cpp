@@ -1,18 +1,16 @@
 #include <cstring>
 #include <sstream>
 #include <thread>
-#include <mutex>
 #include <mfx_trace2.h>
 #include <mfx_trace2_textlog.h>
 #include <mfx_trace2_chrome.h>
 
 mfx::Trace _mfx_trace;
-mfxU64 mfx::Trace::idCounter = 1;
 
-static std::mutex traceMutex;
 
 mfx::Trace::Trace()
 {
+#ifdef __linux__
     FILE *config = fopen((std::string(getenv("HOME")) + "/.mfx_trace").c_str(), "r");
     if (!config)
         config = fopen("/etc/mfx_trace", "r");
@@ -25,9 +23,10 @@ mfx::Trace::Trace()
     {
         char key_buffer[32] = {}, val_buffer[32] = {};
         sscanf(buffer, "%[^=]=%s\n", key_buffer, val_buffer);
-        options.emplace(key_buffer, val_buffer);
+        options[key_buffer] = val_buffer;
     }
     fclose(config);
+#endif  // __linux__
 
     events.reserve(64000);
 #ifdef MFX_TRACE_ENABLE_TEXTLOG
@@ -151,20 +150,31 @@ mfx::SourceLocation::SourceLocation(mfxU32 _line, const char* _file_name, const 
 mfx::Trace::Scope::Scope(SourceLocation sl, const char* name, mfxU8 level)
     : level(level)
 {
+    if (_mfx_trace.backends.size() == 0) return;
     e.sl = sl;
     e.name = name;
     e.timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
     e.threadId = static_cast<std::ostringstream const &>(std::ostringstream() << std::this_thread::get_id()).str();
+    e.parentIndex = 0;
+    e.id = _mfx_trace.idCounter++;
+    e.category = nullptr;
+    e.type = mfx::Trace::EventType::BEGIN;
+    parentIndex = _mfx_trace.events.size();
+    _mfx_trace.pushEvent(e);
+    e.parentIndex = parentIndex;
 }
 
 mfx::Trace::Scope::Scope(SourceLocation sl, const char* name, const char *category, mfxU8 level)
-    : Scope(sl, name, level)
+    : level(level)
 {
+    if (_mfx_trace.backends.size() == 0) return;
+    e.sl = sl;
     e.name = name;
-    e.parentIndex = 0;
-    e.id = idCounter++;
-    e.category = category;
     e.timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+    e.threadId = static_cast<std::ostringstream const &>(std::ostringstream() << std::this_thread::get_id()).str();
+    e.parentIndex = 0;
+    e.id = _mfx_trace.idCounter++;
+    e.category = category;
     e.type = mfx::Trace::EventType::BEGIN;
     parentIndex = _mfx_trace.events.size();
     _mfx_trace.pushEvent(e);
@@ -173,6 +183,7 @@ mfx::Trace::Scope::Scope(SourceLocation sl, const char* name, const char *catego
 
 mfx::Trace::Scope::~Scope()
 {
+    if (_mfx_trace.backends.size() == 0) return;
     e.type = mfx::Trace::EventType::END;
     e.description = "";
     e.timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();

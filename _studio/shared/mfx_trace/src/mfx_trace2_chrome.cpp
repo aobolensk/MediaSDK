@@ -1,7 +1,9 @@
 #include <algorithm>
 #include <mfx_trace2_chrome.h>
+#if __linux__
 #include <syscall.h>
 #include <unistd.h>
+#endif  // __linux__
 
 #ifdef MFX_TRACE_ENABLE_CHROME
 
@@ -127,7 +129,7 @@ mfx::Chrome::~Chrome()
             e.description = (std::string("link: ") + flowBegin->second.category + "->sync").c_str();
             e.timestamp = flowBegin->second.timestamp;
             e.parentIndex = 0;
-            e.id = Trace::idCounter++;
+            e.id = _mfx_trace.idCounter++;
             e.type = mfx::Trace::EventType::OTHER1;
             e.threadId = it->threadId;
             events.push_back(e);
@@ -141,7 +143,11 @@ mfx::Chrome::~Chrome()
         }
     }
     char buffer[64] = {};
+#if __linux__
     snprintf(buffer, sizeof(buffer), "chrome_trace_%lu.json", syscall(SYS_getpid));
+#else
+    snprintf(buffer, sizeof(buffer), "chrome_trace.json");
+#endif
     FILE *chrome_trace_file = fopen(buffer, "w");
     fprintf(chrome_trace_file, "[\n");
     for (Trace::Event &e : events)

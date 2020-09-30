@@ -23,6 +23,7 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -126,8 +127,9 @@ public:
     };
 
     std::vector <Event> events;
-    static mfxU64 idCounter;
+    mfxU64 idCounter = 1;
     std::vector <std::unique_ptr <TraceBackend> > backends;
+    std::mutex traceMutex;
 
     void pushEvent(const Trace::Event &e);
 
@@ -162,6 +164,7 @@ public:
         template <typename... Args>
         void add_info(SourceLocation sl, const char *key, Args... args)
         {
+            if (_mfx_trace.backends.size() == 0) return;
             add_info_pair(key, args...);
             Event event(e);
             event.sl = sl;
