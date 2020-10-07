@@ -149,23 +149,23 @@ public:
         mfxU8 level = GENERIC;
         Event e;
         mfxU64 parentIndex;
-        void add_info_pair(const char* key, const std::string &value);
-        void add_info_pair(const char* key, const mfxVideoParam &value);
-        void add_info_pair(const char* key, const mfxExtBuffer &value);
-        void add_info_pair(const char* key, const mfxExtCodingOption2 &value);
-        void add_info_pair(const char* key, const MFX_GUID &value);
-        void add_info_pair(const char* key, mfxU32 value);
-        void add_info_pair(const char* key, void* value);
+        void event_pair(const char* key, const std::string &value);
+        void event_pair(const char* key, const mfxVideoParam &value);
+        void event_pair(const char* key, const mfxExtBuffer &value);
+        void event_pair(const char* key, const mfxExtCodingOption2 &value);
+        void event_pair(const char* key, const MFX_GUID &value);
+        void event_pair(const char* key, mfxU32 value);
+        void event_pair(const char* key, void* value);
     public:
         Scope(SourceLocation sl, const char* name, mfxU8 level = GENERIC);
         Scope(SourceLocation sl, const char* name, const char *category, mfxU8 level = GENERIC);
         ~Scope();
 
         template <typename... Args>
-        void add_info(SourceLocation sl, const char *key, Args... args)
+        void event(SourceLocation sl, const char *key, Args... args)
         {
             if (_mfx_trace.backends.size() == 0) return;
-            add_info_pair(key, args...);
+            event_pair(key, args...);
             Event event(e);
             event.sl = sl;
             event.type = mfx::Trace::EventType::ADD_INFO;

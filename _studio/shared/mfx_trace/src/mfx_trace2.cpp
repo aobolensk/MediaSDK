@@ -210,17 +210,17 @@ std::string mfx::Trace::hex(mfxU8 value)
     return static_cast<std::ostringstream const &>(std::ostringstream() << "0x" << std::hex << (mfxU16)value).str();
 }
 
-void mfx::Trace::Scope::add_info_pair(const char* key, const std::string &value)
+void mfx::Trace::Scope::event_pair(const char* key, const std::string &value)
 {
     e.map.emplace(key, Node(value));
 }
 
-void mfx::Trace::Scope::add_info_pair(const char* key, mfxU32 value)
+void mfx::Trace::Scope::event_pair(const char* key, mfxU32 value)
 {
     e.map.emplace(key, Node(std::to_string(value)));
 }
 
-void mfx::Trace::Scope::add_info_pair(const char* key, const mfxVideoParam &value)
+void mfx::Trace::Scope::event_pair(const char* key, const mfxVideoParam &value)
 {
     // Not all fields are listed here
     std::map <std::string, Node> mfxVideoParamMap;
@@ -246,7 +246,7 @@ void mfx::Trace::Scope::add_info_pair(const char* key, const mfxVideoParam &valu
     e.map.emplace(key, Node(mfxVideoParamMap));
 }
 
-void mfx::Trace::Scope::add_info_pair(const char* key, const mfxExtBuffer &value)
+void mfx::Trace::Scope::event_pair(const char* key, const mfxExtBuffer &value)
 {
     std::map <std::string, Node> extBufferMap;
     extBufferMap.emplace("BufferId", std::to_string(value.BufferId));
@@ -254,7 +254,7 @@ void mfx::Trace::Scope::add_info_pair(const char* key, const mfxExtBuffer &value
     e.map.emplace(key, Node(extBufferMap));
 }
 
-void mfx::Trace::Scope::add_info_pair(const char* key, const mfxExtCodingOption2 &value)
+void mfx::Trace::Scope::event_pair(const char* key, const mfxExtCodingOption2 &value)
 {
     std::map <std::string, Node> codingOptionMap;
     codingOptionMap.emplace("IntRefType", Node(std::to_string(value.IntRefType)));
@@ -289,7 +289,7 @@ void mfx::Trace::Scope::add_info_pair(const char* key, const mfxExtCodingOption2
     e.map.emplace(key, Node(codingOptionMap));
 }
 
-void mfx::Trace::Scope::add_info_pair(const char* key, const MFX_GUID &value)
+void mfx::Trace::Scope::event_pair(const char* key, const MFX_GUID &value)
 {
     std::vector <Node> guidVec;
     guidVec.emplace_back(Node(hex(value.Data1)));
@@ -302,7 +302,7 @@ void mfx::Trace::Scope::add_info_pair(const char* key, const MFX_GUID &value)
     e.map.emplace(key, Node(guidVec));
 }
 
-void mfx::Trace::Scope::add_info_pair(const char* key, void *value)
+void mfx::Trace::Scope::event_pair(const char* key, void *value)
 {
     std::string val = static_cast<std::ostringstream const &>(std::ostringstream() << value).str();
     e.map.emplace(key, Node(val));

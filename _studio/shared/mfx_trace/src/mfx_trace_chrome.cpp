@@ -158,13 +158,13 @@ ChromeTrace::ScopedEventCreator::ScopedEventCreator(mfxTraceLevel level, const c
     chrome_trace.events.push_back(e);
 }
 
-void ChromeTrace::ScopedEventCreator::add_info(const std::string &key, const std::string &value)
+void ChromeTrace::ScopedEventCreator::event(const std::string &key, const std::string &value)
 {
     if (level > trace_level) return;
     info.emplace_back(key, value);
 }
 
-void ChromeTrace::ScopedEventCreator::add_info(const std::string &key, void *value)
+void ChromeTrace::ScopedEventCreator::event(const std::string &key, void *value)
 {
     if (level > trace_level) return;
     info.emplace_back(key, static_cast<std::ostringstream const &>(std::ostringstream() << value).str());

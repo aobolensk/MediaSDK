@@ -7,7 +7,7 @@ For tracing any scope you can use `mfx::Trace::Scope` instance. To trace current
 Event types:
 - BEGIN (is created in constructor of `mfx::Trace::Scope` object, means beginning of tracing scope)
 - END (is created in destructor of `mfx::Trace::Scope` object, means end of tracing scope)
-- ADD_INFO (is created when `add_info` function is called)
+- ADD_INFO (is created when `event` function is called)
 - others... (reserved for creating backend specific events)
 
 ```cpp
@@ -23,15 +23,15 @@ void Function()
 }
 ```
 
-Every event has map with additional information. Traces support saving information about variable values which can be used by tracing backends. Saving can be done using `add_info` method from `mfx::Trace::Scope`. `add_info` function calls internal implementations for different types `add_info_pair`. They are dispatched at compile time and it is possible to extend supported types list by adding `add_info_pair` implementations for other types.
+Every event has map with additional information. Traces support saving information about variable values which can be used by tracing backends. Saving can be done using `event` method from `mfx::Trace::Scope`. `event` function calls internal implementations for different types `event_pair`. They are dispatched at compile time and it is possible to extend supported types list by adding `event_pair` implementations for other types.
 
 Events exposure:
 ```cpp
 void Function(int param, void *ptr)
 {
     mfx::Trace::Scope tr(MFX_TRACE2_CTX, "Function", "func");  // <-- Function begin event
-    tr.add_info(MFX_TRACE2_CTX, "parameter", param);           // <-- add_info event
-    tr.add_info(MFX_TRACE2_CTX, "pointer", ptr);               // <-- add_info event
+    tr.event(MFX_TRACE2_CTX, "parameter", param);           // <-- add_info event
+    tr.event(MFX_TRACE2_CTX, "pointer", ptr);               // <-- add_info event
     ...
 }                                                              // <-- Function end event
 ```

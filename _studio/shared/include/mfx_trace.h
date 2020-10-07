@@ -433,8 +433,8 @@ public:
         mfxU64 id, start;
         std::vector <std::pair <std::string, std::string> > info;
     public:
-        void add_info(const std::string &key, const std::string &value);
-        void add_info(const std::string &key, void *value);
+        void event(const std::string &key, const std::string &value);
+        void event(const std::string &key, void *value);
         ScopedEventCreator(mfxTraceLevel level, const char *name);
         ~ScopedEventCreator();
     };
@@ -480,7 +480,7 @@ private:
         ChromeTrace::ScopedEventCreator _chrome_trace_scoped_event(_level, _task_name);  \
         ROLLBACK_WARN_HIDE_PREV_LOCAL_DECLARATION
     #define MFX_TRACE_CHROME_ADD_INFO(key, value) \
-        _chrome_trace_scoped_event.add_info(key, value)
+        _chrome_trace_scoped_event.event(key, value)
     #define MFX_AUTO_TRACE_STOP()
     #define MFX_AUTO_TRACE_GETID() 0
 #else

@@ -673,9 +673,9 @@ mfxStatus MFXVideoENCODE_QueryIOSurf(mfxSession session, mfxVideoParam *par, mfx
     MFX_CHECK(par, MFX_ERR_NULL_PTR);
     MFX_CHECK(request, MFX_ERR_NULL_PTR);
     mfx::Trace::Scope tr(MFX_TRACE2_CTX, "QueryIOSurf", "query");
-    tr.add_info(MFX_TRACE2_CTX, "par", *par);
-    tr.add_info(MFX_TRACE2_CTX, "co2", *(mfxExtCodingOption2 *)GetExtBuffer(par->ExtParam, par->NumExtParam, MFX_EXTBUFF_CODING_OPTION2));
-    tr.add_info(MFX_TRACE2_CTX, "fei_guid", MFXIFEIEnabled_GUID);
+    tr.event(MFX_TRACE2_CTX, "par", *par);
+    tr.event(MFX_TRACE2_CTX, "co2", *(mfxExtCodingOption2 *)GetExtBuffer(par->ExtParam, par->NumExtParam, MFX_EXTBUFF_CODING_OPTION2));
+    tr.event(MFX_TRACE2_CTX, "fei_guid", MFXIFEIEnabled_GUID);
 
     mfxStatus mfxRes;
     MFX_AUTO_LTRACE_FUNC(MFX_TRACE_LEVEL_API);
@@ -850,7 +850,7 @@ mfxStatus MFXVideoENCODE_EncodeFrameAsync(mfxSession session, mfxEncodeCtrl *ctr
     MFX_AUTO_LTRACE_WITHID(MFX_TRACE_LEVEL_API, "MFX_EncodeFrameAsync");
     MFX_TRACE_CHROME_ADD_INFO("session", session);
     mfx::Trace::Scope tr(MFX_TRACE2_CTX, "EncodeFrameAsync", "enc");
-    tr.add_info(MFX_TRACE2_CTX, "session", session);
+    tr.event(MFX_TRACE2_CTX, "session", session);
     MFX_LTRACE_BUFFER(MFX_TRACE_LEVEL_API, ctrl);
     MFX_LTRACE_BUFFER(MFX_TRACE_LEVEL_API, surface);
 
@@ -1005,7 +1005,7 @@ mfxStatus MFXVideoENCODE_EncodeFrameAsync(mfxSession session, mfxEncodeCtrl *ctr
     {
         MFX_LTRACE_P(MFX_TRACE_LEVEL_API, *syncp);
         MFX_TRACE_CHROME_ADD_INFO("syncp", *syncp);
-        tr.add_info(MFX_TRACE2_CTX, "syncp", *syncp);
+        tr.event(MFX_TRACE2_CTX, "syncp", *syncp);
     }
     MFX_LTRACE_I(MFX_TRACE_LEVEL_API, mfxRes);
     return mfxRes;
