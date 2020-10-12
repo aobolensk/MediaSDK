@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2019 Intel Corporation
+// Copyright (c) 2017-2020 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -17,6 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
 #include <mfxvideo.h>
 
 #include <functional>
@@ -673,8 +674,6 @@ mfxStatus MFXVideoENCODE_QueryIOSurf(mfxSession session, mfxVideoParam *par, mfx
     MFX_CHECK(request, MFX_ERR_NULL_PTR);
     mfx::Trace::Scope tr(MFX_TRACE2_CTX, "QueryIOSurf", "query");
     tr.event(MFX_TRACE2_CTX, "par", *par);
-    tr.event(MFX_TRACE2_CTX, "co2", *(mfxExtCodingOption2 *)GetExtBuffer(par->ExtParam, par->NumExtParam, MFX_EXTBUFF_CODING_OPTION2));
-    tr.event(MFX_TRACE2_CTX, "fei_guid", MFXIFEIEnabled_GUID);
 
     mfxStatus mfxRes;
     MFX_AUTO_LTRACE_FUNC(MFX_TRACE_LEVEL_API);
