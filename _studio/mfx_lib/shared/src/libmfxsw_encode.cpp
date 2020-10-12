@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2020 Intel Corporation
+// Copyright (c) 2017-2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -848,7 +848,6 @@ mfxStatus MFXVideoENCODE_EncodeFrameAsync(mfxSession session, mfxEncodeCtrl *ctr
     mfxStatus mfxRes;
 
     MFX_AUTO_LTRACE_WITHID(MFX_TRACE_LEVEL_API, "MFX_EncodeFrameAsync");
-    MFX_TRACE_CHROME_ADD_INFO("session", session);
     mfx::Trace::Scope tr(MFX_TRACE2_CTX, "EncodeFrameAsync", "enc");
     tr.event(MFX_TRACE2_CTX, "session", session);
     MFX_LTRACE_BUFFER(MFX_TRACE_LEVEL_API, ctrl);
@@ -1004,7 +1003,6 @@ mfxStatus MFXVideoENCODE_EncodeFrameAsync(mfxSession session, mfxEncodeCtrl *ctr
     if (mfxRes == MFX_ERR_NONE && syncp)
     {
         MFX_LTRACE_P(MFX_TRACE_LEVEL_API, *syncp);
-        MFX_TRACE_CHROME_ADD_INFO("syncp", *syncp);
         tr.event(MFX_TRACE2_CTX, "syncp", *syncp);
     }
     MFX_LTRACE_I(MFX_TRACE_LEVEL_API, mfxRes);
