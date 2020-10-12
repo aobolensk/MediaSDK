@@ -53,7 +53,7 @@ void write_event(FILE *file, const mfx::Trace::Event &e) {
     switch (e.type)
     {
     case mfx::Trace::EventType::NONE:
-    case mfx::Trace::EventType::ADD_INFO:
+    case mfx::Trace::EventType::INFO:
         return;
     case mfx::Trace::EventType::BEGIN:
         eventType = "B";

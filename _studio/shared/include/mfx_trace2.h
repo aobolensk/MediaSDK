@@ -106,7 +106,7 @@ public:
         NONE,
         BEGIN,
         END,
-        ADD_INFO,
+        INFO,
         OTHER1,
         OTHER2,
     };
@@ -168,7 +168,7 @@ public:
             event_pair(key, args...);
             Event event(e);
             event.sl = sl;
-            event.type = mfx::Trace::EventType::ADD_INFO;
+            event.type = mfx::Trace::EventType::INFO;
             event.timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
             event.description = key;
             _mfx_trace.pushEvent(event);

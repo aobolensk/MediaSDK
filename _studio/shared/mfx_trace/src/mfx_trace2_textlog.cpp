@@ -49,14 +49,14 @@ void mfx::TextLog::handleEvent(const mfx::Trace::Event &e)
     case mfx::Trace::EventType::END:
         eventType = "EXIT";
         break;
-    case mfx::Trace::EventType::ADD_INFO:
+    case mfx::Trace::EventType::INFO:
         eventType = "VARIABLE";
         break;
     default:
         break;
     }
     fprintf(file, "%s:%d - %s %llu %s\n", e.sl.file_name(), e.sl.line(), e.sl.function_name(), e.timestamp, eventType);
-    if (e.type == mfx::Trace::EventType::ADD_INFO)
+    if (e.type == mfx::Trace::EventType::INFO)
     {
         auto entry = e.map.find(e.description);
         if (entry != e.map.end())
