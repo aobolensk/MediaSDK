@@ -22,7 +22,6 @@
 #include <mfx_session.h>
 #include <mfx_trace.h>
 #include <mfx_utils.h>
-#include <mfx_trace2.h>
 
 mfxStatus MFXVideoCORE_SyncOperation(mfxSession session, mfxSyncPoint syncp, mfxU32 wait)
 {

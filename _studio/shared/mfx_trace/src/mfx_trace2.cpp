@@ -29,14 +29,16 @@ mfx::Trace::Trace()
 #endif  // __linux__
 
     events.reserve(64000);
-#ifdef MFX_TRACE_ENABLE_TEXTLOG
+#if defined(USE_MFX_TRACE2) && defined(MFX_TRACE_ENABLE_TEXTLOG)
     if (options["Output"] == "0x30") // maybe incorrect code
     {
         backends.push_back(std::unique_ptr<TraceBackend>(new TextLog(options["TextLog"].c_str())));
+        printf("[TRACE] TextLog backend %s is enabled!\n", options["TextLog"].c_str());
     }
 #endif
-#ifdef MFX_TRACE_ENABLE_CHROME
+#if defined(USE_MFX_TRACE2) && defined(MFX_TRACE_ENABLE_CHROME)
     backends.push_back(std::unique_ptr<TraceBackend>(new Chrome));
+    printf("[TRACE] Chrome backend is enabled!\n");
 #endif
 }
 

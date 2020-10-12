@@ -20,7 +20,7 @@
 
 #include "mfx_trace.h"
 
-#ifdef MFX_TRACE_ENABLE_STAT
+#if !defined(USE_MFX_TRACE2) && defined(MFX_TRACE_ENABLE_STAT)
 extern "C"
 {
 #include "mfx_trace_utils.h"

@@ -22,6 +22,11 @@
 #define __MFX_TRACE_H__
 
 #include "mfxdefs.h"
+#include "mfx_trace2.h"
+
+#ifdef USE_MFX_TRACE2
+#define MFX_TRACE_DISABLE
+#endif
 
 #ifndef MFX_TRACE_DISABLE
 // Uncomment one or several lines below to enable tracing

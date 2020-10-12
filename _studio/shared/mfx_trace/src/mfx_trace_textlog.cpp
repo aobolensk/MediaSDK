@@ -20,7 +20,7 @@
 
 #include "mfx_trace.h"
 
-#ifdef MFX_TRACE_ENABLE_TEXTLOG
+#if !defined(USE_MFX_TRACE2) && defined(MFX_TRACE_ENABLE_TEXTLOG)
 extern "C"
 {
 

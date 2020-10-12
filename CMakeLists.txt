@@ -77,6 +77,7 @@ option( ENABLE_ITT "Build targets with ITT instrumentation support (requires VTu
 option( ENABLE_TEXTLOG "Enable textlog tracing?" "${ENABLE_ALL}")
 option( ENABLE_STAT "Enable stat tracing?" "${ENABLE_ALL}")
 option( ENABLE_CHROME_TRACE "Enable chrome tracing?" "${ENABLE_ALL}")
+option( ENABLE_MFX_TRACE2 "Enable mfx_trace2.h?" OFF)
 
 # -DBUILD_ALL will enable all the build targets unless user did not explicitly
 # switched some targets OFF, i.e. configuring in the following way is possible:
@@ -211,6 +212,7 @@ message("  ENABLE_ITT                              : ${ENABLE_ITT}")
 message("  ENABLE_TEXTLOG                          : ${ENABLE_TEXTLOG}")
 message("  ENABLE_STAT                             : ${ENABLE_STAT}")
 message("  ENABLE_CHROME_TRACE                     : ${ENABLE_CHROME_TRACE}")
+message("  ENABLE_MFX_TRACE2                       : ${ENABLE_MFX_TRACE2}")
 message("Build:")
 message("  BUILD_RUNTIME                           : ${BUILD_RUNTIME}")
 message("  BUILD_DISPATCHER                        : ${BUILD_DISPATCHER}")

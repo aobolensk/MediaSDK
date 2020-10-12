@@ -23,7 +23,6 @@
 #include <mfx_session.h>
 #include <mfx_tools.h>
 #include <mfx_common.h>
-#include <mfx_trace2.h>
 
 // sheduling and threading stuff
 #include <mfx_task.h>

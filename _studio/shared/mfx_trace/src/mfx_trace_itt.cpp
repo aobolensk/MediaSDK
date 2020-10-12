@@ -20,7 +20,7 @@
 
 #include "mfx_trace.h"
 
-#ifdef MFX_TRACE_ENABLE_ITT
+#if !defined(USE_MFX_TRACE2) && defined(MFX_TRACE_ENABLE_ITT)
 extern "C"
 {
 
