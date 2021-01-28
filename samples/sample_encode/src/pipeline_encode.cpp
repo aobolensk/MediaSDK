@@ -1632,9 +1632,7 @@ mfxStatus CEncodingPipeline::Init(sInputParams *pParams)
     m_strDevicePath = pParams->strDevicePath;
 #endif
 
-#if defined(LIBVA_DRM_SUPPORT)
     m_nVACopy = pParams->nVACopy;
-#endif
 
     mfxInitParamlWrap initPar;
 
@@ -1853,6 +1851,8 @@ mfxStatus CEncodingPipeline::Init(sInputParams *pParams)
         CParametersDumper::DumpLibraryConfiguration(pParams->DumpFileName, NULL, m_pmfxVPP, m_pmfxENC, NULL, &m_mfxVppParams,&m_mfxEncParams);
     }
 
+    m_frameLoader = FrameLoader(this);
+
     return MFX_ERR_NONE;
 }
 
@@ -2021,22 +2021,9 @@ mfxStatus CEncodingPipeline::FillBuffers()
         for (mfxU32 i = 0; i < m_nPerfOpt; i++)
         {
             mfxFrameSurface1* surface = m_pmfxVPP ? &m_pVppSurfaces[i] : &m_pEncSurfaces[i];
-#if defined(LIBVA_DRM_SUPPORT)
-            if (m_nVACopy != -1) // vacopy mode
-            {
-                sts = LoadFrameWithVACopy(surface, m_nVACopy);
-                MSDK_CHECK_STATUS(sts, "LoadFrameWithVACopy failed");
-            }
-            else
-#endif
-            {
-                sts = m_pMFXAllocator->Lock(m_pMFXAllocator->pthis, surface->Data.MemId, &surface->Data);
-                MSDK_CHECK_STATUS(sts, "m_pMFXAllocator->Lock failed");
-                sts = m_FileReader.LoadNextFrame(surface);
-                MSDK_CHECK_STATUS(sts, "m_FileReader.LoadNextFrame failed");
-                sts = m_pMFXAllocator->Unlock(m_pMFXAllocator->pthis, surface->Data.MemId, &surface->Data);
-                MSDK_CHECK_STATUS(sts, "m_pMFXAllocator->Unlock failed");
-            }
+            sts = m_frameLoader.Load(surface);
+            if (sts != MFX_ERR_MORE_DATA)
+                return sts;
         }
     }
     return MFX_ERR_NONE;
@@ -2647,7 +2634,6 @@ mfxStatus CEncodingPipeline::Run()
     return sts;
 }
 
-#if defined(LIBVA_DRM_SUPPORT)
 mfxStatus CEncodingPipeline::LoadFrameWithVACopy(mfxFrameSurface1* pSurf, mfxI32 nVACopyMode)
 {
     mfxStatus sts = MFX_ERR_NONE;
@@ -2675,11 +2661,9 @@ mfxStatus CEncodingPipeline::LoadFrameWithVACopy(mfxFrameSurface1* pSurf, mfxI32
 
     // copy raw data from uer buffer to video surface with vaCopy
     sts = drmdev->CopyVAFrame(pSurf, true, nVACopyMode);
-    MSDK_CHECK_STATUS(sts, "m_hwdev->CopyFrame failed");
 
     return sts;
 }
-#endif
 
 mfxStatus CEncodingPipeline::LoadNextFrame(mfxFrameSurface1* pSurf)
 {
@@ -2706,32 +2690,9 @@ mfxStatus CEncodingPipeline::LoadNextFrame(mfxFrameSurface1* pSurf)
         // read frame from file
         if (m_bExternalAlloc)
         {
-#if defined(LIBVA_DRM_SUPPORT)
-            if (m_nVACopy != -1) //vacopy mode
-            {
-                sts = LoadFrameWithVACopy(pSurf, m_nVACopy);
-                MSDK_CHECK_STATUS(sts, "LoadFrameWithVACopy failed");
-            }
-            else
-#endif
-            {
-                mfxStatus sts1 = m_pMFXAllocator->Lock(m_pMFXAllocator->pthis, pSurf->Data.MemId, &(pSurf->Data));
-                MSDK_CHECK_STATUS(sts1, "m_pMFXAllocator->Lock failed");
-
-                if (m_bQPFileMode)
-                {
-                    mfxU16 w = pSurf->Info.CropW ? pSurf->Info.CropW : pSurf->Info.Width;
-                    mfxU16 h = pSurf->Info.CropH ? pSurf->Info.CropH : pSurf->Info.Height;
-                    mfxU32 vid = pSurf->Info.FrameId.ViewId;
-                    sts = m_FileReader.SkipNframesFromBeginning(w, h, vid, m_QPFileReader.GetCurrentDisplayOrder());
-                    MSDK_CHECK_STATUS(sts, "m_FileReader.SkipNframesFromBeginning failed");
-                }
-
-                sts = m_FileReader.LoadNextFrame(pSurf);
-
-                sts1 = m_pMFXAllocator->Unlock(m_pMFXAllocator->pthis, pSurf->Data.MemId, &(pSurf->Data));
-                MSDK_CHECK_STATUS(sts1, "m_pMFXAllocator->Unlock failed");
-            }
+            sts = m_frameLoader.Load(pSurf);
+            if (sts != MFX_ERR_MORE_DATA)
+                return sts;
         }
         else
         {
@@ -2831,4 +2792,39 @@ void CEncodingPipeline::PrintInfo()
     msdk_printf(MSDK_STRING("Media SDK version\t%d.%d\n"), ver.Major, ver.Minor);
 
     msdk_printf(MSDK_STRING("\n"));
+}
+
+mfxStatus FrameLoader::Load(mfxFrameSurface1* pSurf)
+{
+    MFX_CHECK_NULL_PTR1(pipeline);
+    mfxStatus sts = MFX_ERR_NONE;
+    if (vaCopy)
+    {
+        sts = pipeline->LoadFrameWithVACopy(pSurf, pipeline->m_nVACopy);
+        if (sts != MFX_ERR_UNKNOWN)
+        {
+            return sts;
+        }
+        else
+        {
+            vaCopy = false;
+        }
+    }
+    mfxStatus sts1 = pipeline->m_pMFXAllocator->Lock(pipeline->m_pMFXAllocator->pthis, pSurf->Data.MemId, &(pSurf->Data));
+    MSDK_CHECK_STATUS(sts1, "m_pMFXAllocator->Lock failed");
+
+    if (pipeline->m_bQPFileMode)
+    {
+        mfxU16 w = pSurf->Info.CropW ? pSurf->Info.CropW : pSurf->Info.Width;
+        mfxU16 h = pSurf->Info.CropH ? pSurf->Info.CropH : pSurf->Info.Height;
+        mfxU32 vid = pSurf->Info.FrameId.ViewId;
+        sts = pipeline->m_FileReader.SkipNframesFromBeginning(w, h, vid, pipeline->m_QPFileReader.GetCurrentDisplayOrder());
+        MSDK_CHECK_STATUS(sts, "m_FileReader.SkipNframesFromBeginning failed");
+    }
+
+    sts = pipeline->m_FileReader.LoadNextFrame(pSurf);
+
+    sts1 = pipeline->m_pMFXAllocator->Unlock(pipeline->m_pMFXAllocator->pthis, pSurf->Data.MemId, &(pSurf->Data));
+    MSDK_CHECK_STATUS(sts1, "m_pMFXAllocator->Unlock failed");
+    return sts;
 }

@@ -548,7 +548,6 @@ mfxStatus CVAAPIDeviceDRM::CopyVAFrame(mfxFrameSurface1 * pSurface, bool bUserTo
     mfx_res = va_to_mfx_status(va_res);
     if (MFX_ERR_NONE != mfx_res)
     {
-        printf("m_DRMLibVA.VACopy failed\n");
         return mfx_res;
     }
 

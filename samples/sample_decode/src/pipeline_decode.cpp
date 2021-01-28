@@ -407,9 +407,7 @@ mfxStatus CDecodingPipeline::Init(sInputParams *pParams)
     m_libvaBackend = pParams->libvaBackend;
 #endif // defined(MFX_LIBVA_SUPPORT)
 
-#if defined(LIBVA_DRM_SUPPORT)
     m_nVACopy = pParams->nVACopy;
-#endif
 
     sts = GetImpl(*pParams, initPar.Implementation);
     MSDK_CHECK_STATUS(sts, "GetImpl failed");
@@ -594,6 +592,8 @@ mfxStatus CDecodingPipeline::Init(sInputParams *pParams)
         sts = CreateRenderingWindow(pParams);
         MSDK_CHECK_STATUS(sts, "CreateRenderingWindow failed");
     }
+
+    m_frameWriter = FrameWriter(this);
 
     return sts;
 }
@@ -1550,7 +1550,6 @@ mfxStatus CDecodingPipeline::ResetDecoder(sInputParams *pParams)
     return MFX_ERR_NONE;
 }
 
-#if defined(LIBVA_DRM_SUPPORT)
 mfxStatus CDecodingPipeline::WriteFrameWithVACopy(mfxFrameSurface1* frame, mfxI32 nVACopyMode)
 {
     mfxStatus sts = MFX_ERR_NONE;
@@ -1565,7 +1564,10 @@ mfxStatus CDecodingPipeline::WriteFrameWithVACopy(mfxFrameSurface1* frame, mfxI3
 
     // copy raw data from video surface to user buffer with vaCopy
     sts = drmdev->CopyVAFrame(frame, false, nVACopyMode);
-    MSDK_CHECK_STATUS(sts, "m_hwdev->CopyFrame failed");
+    if (sts)
+    {
+        return sts;
+    }
 
     // write decoded frame data from user buffer to file
     sts = m_FileWriter.WriteNextFrame(frame);
@@ -1573,7 +1575,6 @@ mfxStatus CDecodingPipeline::WriteFrameWithVACopy(mfxFrameSurface1* frame, mfxI3
 
     return sts;
 }
-#endif
 
 mfxStatus CDecodingPipeline::DeliverOutput(mfxFrameSurface1* frame)
 {
@@ -1595,20 +1596,7 @@ mfxStatus CDecodingPipeline::DeliverOutput(mfxFrameSurface1* frame)
 
     if (m_bExternalAlloc) {
         if (m_eWorkMode == MODE_FILE_DUMP) {
-#if defined(LIBVA_DRM_SUPPORT)
-            if (m_nVACopy != -1) { // vacopy mode
-                sts = WriteFrameWithVACopy(frame, m_nVACopy);
-            } else
-#endif
-            {
-                res = m_pGeneralAllocator->Lock(m_pGeneralAllocator->pthis, frame->Data.MemId, &(frame->Data));
-
-                if (MFX_ERR_NONE == res) {
-                    res = m_bOutI420 ? m_FileWriter.WriteNextFrameI420(frame)
-                        : m_FileWriter.WriteNextFrame(frame);
-                    sts = m_pGeneralAllocator->Unlock(m_pGeneralAllocator->pthis, frame->Data.MemId, &(frame->Data));
-                }
-            }
+            sts = m_frameWriter.Write(frame);
 
             if ((MFX_ERR_NONE == res) && (MFX_ERR_NONE != sts)) {
                 res = sts;
@@ -2148,4 +2136,31 @@ void CDecodingPipeline::PrintInfo()
     msdk_printf(MSDK_STRING("\n"));
 
     return;
+}
+
+mfxStatus FrameWriter::Write(mfxFrameSurface1* pSurf)
+{
+    MSDK_CHECK_POINTER(pipeline, MFX_ERR_NULL_PTR);
+    mfxStatus sts = MFX_ERR_NONE;
+    if (vaCopy)
+    {
+        sts = pipeline->WriteFrameWithVACopy(pSurf, pipeline->m_nVACopy);
+        if (sts != MFX_ERR_UNKNOWN)
+        {
+            return sts;
+        }
+        else
+        {
+            vaCopy = false;
+        }
+    }
+    sts = pipeline->m_pGeneralAllocator->Lock(pipeline->m_pGeneralAllocator->pthis, pSurf->Data.MemId, &(pSurf->Data));
+
+    if (MFX_ERR_NONE == sts)
+    {
+        sts = pipeline->m_bOutI420 ? pipeline->m_FileWriter.WriteNextFrameI420(pSurf)
+            : pipeline->m_FileWriter.WriteNextFrame(pSurf);
+        sts = pipeline->m_pGeneralAllocator->Unlock(pipeline->m_pGeneralAllocator->pthis, pSurf->Data.MemId, &(pSurf->Data));
+    }
+    return sts;
 }
